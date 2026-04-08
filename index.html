@@ -1159,6 +1159,16 @@ function startApp() {
   window.addEventListener('online',  onNetworkRestore);
   window.addEventListener('offline', updateSyncStatus);
 
+  // 🔥 AUTO-FOCUS: langsung fokus ke input scanner saat halaman scan muncul
+  setTimeout(() => {
+    const scanInput = document.getElementById('scan-inp');
+    if (scanInput) {
+      scanInput.focus();
+      // Optional: scroll agar input terlihat
+      scanInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 150);
+
   refocus();
 }
 
@@ -1517,6 +1527,10 @@ function openDrawer() {
 function closeDrawer() {
   document.getElementById('drawer-overlay').classList.remove('open');
   document.getElementById('drawer').classList.remove('open');
+  // 🔥 Fokus kembali ke input scanner setelah drawer ditutup
+  setTimeout(() => {
+    document.getElementById('scan-inp')?.focus();
+  }, 50);
   refocus();
 }
 
@@ -1571,6 +1585,10 @@ function openCourierModal() {
 
 function closeCourierModal() {
   document.getElementById('courier-modal-overlay').classList.remove('open');
+  // 🔥 Fokus kembali ke input scanner setelah modal ditutup
+  setTimeout(() => {
+    document.getElementById('scan-inp')?.focus();
+  }, 50);
   refocus();
 }
 
@@ -1618,6 +1636,43 @@ function saveCourierModal() {
   closeCourierModal();
   showToast('✅ Kode ekspedisi disimpan — ' + _tempCouriers.length + ' entri');
 }
+
+// 🔥 AUTO-FOCUS saat halaman direload/restore jika sedang dalam mode scan
+window.addEventListener('pageshow', () => {
+  if (document.getElementById('scr-main')?.classList.contains('active')) {
+    setTimeout(() => {
+      document.getElementById('scan-inp')?.focus();
+    }, 100);
+  }
+});
+</script>
+<!-- Scanner Global - selalu aktif tanpa perlu klik -->
+<input type="text" id="global-scanner" 
+  style="position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none;"
+  autocomplete="off" autocorrect="off" autocapitalize="off">
+
+<script>
+// Aktifkan scanner global
+const globalScanner = document.getElementById('global-scanner');
+
+// Fokus ke global scanner setiap 0.5 detik
+setInterval(() => {
+  if (document.getElementById('scr-main').classList.contains('active')) {
+    globalScanner.focus();
+  }
+}, 500);
+
+// Tangkap scan dari global scanner
+globalScanner.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const val = globalScanner.value.trim();
+    if (val && document.getElementById('scr-main').classList.contains('active')) {
+      document.getElementById('scan-inp').value = val;
+      handleScan();
+      globalScanner.value = '';
+    }
+  }
+});
 </script>
 </body>
 </html>
