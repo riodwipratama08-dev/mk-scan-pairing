@@ -1101,6 +1101,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') { e.preventDefault(); handleScan(); }
   });
 
+  // ── Deteksi perangkat touch (mobile/tablet) ──
+  const isTouchOnly = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+  if (!isTouchOnly) {
   // ── AUTO-FOCUS: tangkap semua keystroke ke scan-inp saat layar scan aktif ──
   // Scanner barcode = keyboard — karakter langsung masuk ke elemen yg sedang fokus.
   // Listener ini memastikan scan-inp selalu siap menerima input, tanpa perlu klik dulu.
@@ -1149,6 +1153,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const mainActive = document.getElementById('scr-main').classList.contains('active');
     if (mainActive) setTimeout(() => document.getElementById('scan-inp').focus(), 100);
   });
+  } // end if (!isTouchOnly)
 
   // Enter nav on config
   document.getElementById('inp-op').addEventListener('keydown', e => {
