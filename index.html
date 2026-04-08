@@ -1101,6 +1101,55 @@ window.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') { e.preventDefault(); handleScan(); }
   });
 
+  // ── AUTO-FOCUS: tangkap semua keystroke ke scan-inp saat layar scan aktif ──
+  // Scanner barcode = keyboard — karakter langsung masuk ke elemen yg sedang fokus.
+  // Listener ini memastikan scan-inp selalu siap menerima input, tanpa perlu klik dulu.
+  document.addEventListener('keydown', function(e) {
+    const mainActive = document.getElementById('scr-main').classList.contains('active');
+    if (!mainActive) return;
+
+    // Jangan intercept jika drawer / modal sedang terbuka
+    if (document.getElementById('drawer').classList.contains('open')) return;
+    if (document.getElementById('courier-modal-overlay').classList.contains('open')) return;
+
+    const scanInp   = document.getElementById('scan-inp');
+    const activeEl  = document.activeElement;
+
+    // Jika elemen yang aktif BUKAN scan-inp dan bukan input/textarea lain:
+    if (activeEl !== scanInp &&
+        activeEl.tagName !== 'INPUT' &&
+        activeEl.tagName !== 'TEXTAREA') {
+      // Abaikan modifier-only keys (Ctrl, Alt, Meta, Shift, dll.)
+      if (e.key.length === 1 || e.key === 'Enter') {
+        scanInp.focus();
+        // Biarkan event berjalan normal supaya karakter masuk ke input
+      }
+    }
+  });
+
+  // ── AUTO-REFOCUS: klik di mana saja pada layar scan → kembalikan fokus ──
+  document.getElementById('scr-main').addEventListener('click', function(e) {
+    const target = e.target;
+    // Jangan rebut fokus jika klik pada button/input itu sendiri
+    if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.tagName === 'A') return;
+    // Tunda sedikit supaya aksi klik (toggle, dsb.) selesai dulu
+    setTimeout(() => {
+      const mainActive = document.getElementById('scr-main').classList.contains('active');
+      const drawerOpen = document.getElementById('drawer').classList.contains('open');
+      const modalOpen  = document.getElementById('courier-modal-overlay').classList.contains('open');
+      if (mainActive && !drawerOpen && !modalOpen) {
+        document.getElementById('scan-inp').focus();
+      }
+    }, 80);
+  });
+
+  // ── AUTO-REFOCUS: saat tab/window aktif kembali ──
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState !== 'visible') return;
+    const mainActive = document.getElementById('scr-main').classList.contains('active');
+    if (mainActive) setTimeout(() => document.getElementById('scan-inp').focus(), 100);
+  });
+
   // Enter nav on config
   document.getElementById('inp-op').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('inp-url').focus();
@@ -1158,16 +1207,6 @@ function startApp() {
   startAutoSync();
   window.addEventListener('online',  onNetworkRestore);
   window.addEventListener('offline', updateSyncStatus);
-
-  // 🔥 AUTO-FOCUS: langsung fokus ke input scanner saat halaman scan muncul
-  setTimeout(() => {
-    const scanInput = document.getElementById('scan-inp');
-    if (scanInput) {
-      scanInput.focus();
-      // Optional: scroll agar input terlihat
-      scanInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, 150);
 
   refocus();
 }
@@ -1527,10 +1566,6 @@ function openDrawer() {
 function closeDrawer() {
   document.getElementById('drawer-overlay').classList.remove('open');
   document.getElementById('drawer').classList.remove('open');
-  // 🔥 Fokus kembali ke input scanner setelah drawer ditutup
-  setTimeout(() => {
-    document.getElementById('scan-inp')?.focus();
-  }, 50);
   refocus();
 }
 
@@ -1585,10 +1620,6 @@ function openCourierModal() {
 
 function closeCourierModal() {
   document.getElementById('courier-modal-overlay').classList.remove('open');
-  // 🔥 Fokus kembali ke input scanner setelah modal ditutup
-  setTimeout(() => {
-    document.getElementById('scan-inp')?.focus();
-  }, 50);
   refocus();
 }
 
@@ -1636,43 +1667,6 @@ function saveCourierModal() {
   closeCourierModal();
   showToast('✅ Kode ekspedisi disimpan — ' + _tempCouriers.length + ' entri');
 }
-
-// 🔥 AUTO-FOCUS saat halaman direload/restore jika sedang dalam mode scan
-window.addEventListener('pageshow', () => {
-  if (document.getElementById('scr-main')?.classList.contains('active')) {
-    setTimeout(() => {
-      document.getElementById('scan-inp')?.focus();
-    }, 100);
-  }
-});
-</script>
-<!-- Scanner Global - selalu aktif tanpa perlu klik -->
-<input type="text" id="global-scanner" 
-  style="position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none;"
-  autocomplete="off" autocorrect="off" autocapitalize="off">
-
-<script>
-// Aktifkan scanner global
-const globalScanner = document.getElementById('global-scanner');
-
-// Fokus ke global scanner setiap 0.5 detik
-setInterval(() => {
-  if (document.getElementById('scr-main').classList.contains('active')) {
-    globalScanner.focus();
-  }
-}, 500);
-
-// Tangkap scan dari global scanner
-globalScanner.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const val = globalScanner.value.trim();
-    if (val && document.getElementById('scr-main').classList.contains('active')) {
-      document.getElementById('scan-inp').value = val;
-      handleScan();
-      globalScanner.value = '';
-    }
-  }
-});
 </script>
 </body>
 </html>
